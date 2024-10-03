@@ -25,13 +25,8 @@ gleam deps update
 erlc -I build/packages/gpb/include mumble.erl
 mv mumble.erl src/
 mv mumble.hrl src/
+cp build/packages/gpb/include/gpb.hrl src/ # required, or else we get a lot of `There was a problem running the shell command 'escript'`... unsure why
 ```
-
-Note; when running `gleam run` for the first time after running the above script, we get a lot of `There was a problem running the shell command 'escript'`
-
-Running it a second time fixes this problem.
-
-... I have no idea why!
 
 ---
 

@@ -5,11 +5,9 @@ import simplifile
 pub fn read_messages(proto_path: String) -> List(String) {
   let assert Ok(proto) = simplifile.read(from: proto_path)
   let assert Ok(#(_start, messages_only)) = string.split_once(proto, "message ")
-  let messages_only = "message " <> messages_only
 
-  let message_split = string.split(messages_only, "\n\n")
-
-  message_split
+  { "message " <> messages_only }
+  |> string.split("\n\n")
   |> list.map(formatted)
   |> list.filter(fn(x) { !string.contains(x, "syntax = \"") })
   |> list.filter(fn(x) {

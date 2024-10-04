@@ -1,5 +1,5 @@
 import gleeunit/should
-import mumble_pb.{Version}
+import protobuf/mumble_pb.{Version}
 
 pub fn equivalence_test() {
   let version = Version(1, 2, "release", "os", "os_version")

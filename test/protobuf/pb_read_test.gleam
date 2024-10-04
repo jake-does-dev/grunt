@@ -1,9 +1,9 @@
 import gleam/iterator
 import gleam/string
 import gleeunit/should
-import pb_read
+import protobuf/pb_read
 
-const path = "test/pb_read_test.proto"
+const path = "test/protobuf/pb_read_test.proto"
 
 fn read_message(index: Int) -> String {
   let messages = pb_read.read_messages(path)

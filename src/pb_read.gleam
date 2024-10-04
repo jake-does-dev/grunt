@@ -4,11 +4,12 @@ import simplifile
 
 pub fn read_messages(proto_path: String) -> List(String) {
   let assert Ok(proto) = simplifile.read(from: proto_path)
+  let assert Ok(#(_start, messages_only)) = string.split_once(proto, "message ")
+  let messages_only = "message " <> messages_only
 
-  let message_split = string.split(proto, "\n\n")
+  let message_split = string.split(messages_only, "\n\n")
 
   message_split
-  |> list.drop(1)
   |> list.map(formatted)
   |> list.filter(fn(x) { !string.contains(x, "syntax = \"") })
   |> list.filter(fn(x) {
@@ -35,5 +36,6 @@ fn formatted(message: String) -> String {
   |> list.map(fn(x) { string.replace(x, "uint64", "Int") })
   |> list.map(fn(x) { string.replace(x, "float", "Float") })
   |> list.map(fn(x) { string.replace(x, "bool", "Bool") })
+  |> list.map(fn(x) { string.trim(x) })
   |> string.join(with: "\n")
 }

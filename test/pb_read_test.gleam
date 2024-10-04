@@ -1,23 +1,40 @@
-import gleam/io
-import gleam/list
+import gleam/iterator
 import gleam/string
 import gleeunit/should
 import pb_read
 
-pub fn read_proto_test() {
-  let messages = pb_read.read_messages("test/pb_read_test.proto")
+const path = "test/pb_read_test.proto"
 
-  let assert Ok(#(version, rest)) = list.pop(messages, fn(_) { True })
-  let assert Ok(#(udp_tunnel, rest)) = list.pop(rest, fn(_) { True })
-  let assert Ok(#(authenticate, _rest)) = list.pop(rest, fn(_) { True })
+fn read_message(index: Int) -> String {
+  let messages = pb_read.read_messages(path)
+  let assert Ok(val) =
+    iterator.from_list(messages)
+    |> iterator.at(index)
+  val
+}
 
-  io.debug(version)
-  string.contains(version, "message Version {")
-  |> should.be_true()
+pub fn read_version_test() {
+  read_message(0)
+  |> string.split("\n")
+  |> should.equal([
+    "message Version {", "Int version_v1 = 1;", "Int version_v2 = 5;",
+    "String release = 2;", "String os = 3;", "String os_version = 4;", "}",
+  ])
+}
 
-  string.contains(udp_tunnel, "message UDPTunnel {")
-  |> should.be_true()
+pub fn read_udp_tunnel_test() {
+  read_message(1)
+  |> string.split("\n")
+  |> should.equal(["message UDPTunnel {", "bytes packet = 1;", "}"])
+}
 
-  string.contains(authenticate, "message Authenticate {")
-  |> should.be_true()
+pub fn read_authenticate_test() {
+  read_message(2)
+  |> string.split("\n")
+  |> should.equal([
+    "message Authenticate {", "String username = 1;", "String password = 2;",
+    "repeated String tokens = 3;", "repeated Int celt_versions = 4;",
+    "Bool opus = 5 [default = false];", "Int client_type = 6 [default = 0];",
+    "}",
+  ])
 }

@@ -1,6 +1,8 @@
 import gleam/io
+import gleam/list
 import protobuf/mumble_pb.{Version}
 import protobuf/pb_read
+import protobuf/pb_write
 
 pub fn main() {
   Version(1, 2, "release", "os", "os_version")
@@ -8,5 +10,8 @@ pub fn main() {
   |> mumble_pb.decode_version
   |> io.debug
 
-  pb_read.read_messages("test/protobuf/pb_read_test.proto")
+  let messages = pb_read.read_messages("test/protobuf/pb_read_test.proto")
+  let assert Ok(first) = list.first(messages)
+
+  pb_write.write_gleam("write_gleam_test.gleam", first)
 }

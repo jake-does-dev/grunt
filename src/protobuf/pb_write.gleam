@@ -2,38 +2,39 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/regex.{Match}
 import gleam/string
+import protobuf/field.{type Field}
 import simplifile.{type FileError}
 
-pub type Field {
-  Field(id: Int, name: String, gleam_type: String)
-}
-
-pub fn write_gleam(message: String) -> Nil {
+/// Given a `.proto`-adjusted message from `pb_read.read_messages`, write the Gleam file for
+/// this message.
+/// 
+pub fn write_gleam(file: String, message: String) -> Nil {
   let assert Ok(re) = regex.from_string("message.*{")
   let num_messages =
     regex.scan(re, message)
     |> list.length()
 
   case num_messages {
-    1 -> write_gleam_single_message(message)
+    1 -> write_gleam_single_message(file, message)
     _ -> panic
   }
 }
 
-fn write_gleam_single_message(message: String) -> Nil {
+fn write_gleam_single_message(file: String, message: String) -> Nil {
   let message_name = extract_message_name(message)
 
-  let _fields =
-    message_name
+  let fields =
+    message
     |> string.split("\n")
     |> list.reverse()
     |> list.drop(1)
     |> list.reverse()
     |> list.drop(1)
 
-  let file = "write_type_test.gleam"
-
   let assert Ok(_) = write_imports(file)
+
+  let assert Ok(extracted_fields) = field.extract_fields(fields)
+  let assert Ok(_) = write_type(file, message_name, extracted_fields)
 
   Nil
 }
@@ -48,8 +49,23 @@ fn extract_message_name(message: String) -> String {
 
 fn write_imports(file: String) -> Result(Nil, FileError) {
   let imports =
-    ["import gleam/bit_array", "import gleam/erlang/atom.{type Atom}"]
+    ["import gleam/bit_array", "import gleam/erlang/atom.{type Atom}", "\n"]
     |> string.join("\n")
 
   simplifile.write(to: file, contents: imports)
+}
+
+fn write_type(file: String, message_name: String, fields: List(Field)) {
+  let gleam_type =
+    list.concat([
+      [
+        "pub type " <> message_name <> " {",
+        "\t" <> message_name <> "(",
+        ..field.as_type_strings(fields)
+      ],
+      ["\t)", "}"],
+    ])
+    |> string.join("\n")
+
+  simplifile.append(to: file, contents: gleam_type)
 }

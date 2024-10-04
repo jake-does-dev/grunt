@@ -1,5 +1,6 @@
 import gleam/int
 import gleam/list
+import gleam/order.{type Order}
 import gleam/result
 import gleam/string
 
@@ -22,9 +23,7 @@ pub fn extract_fields(fields: List(String)) -> Result(List(Field), FieldError) {
   fields
   |> list.map(extract_field)
   |> result.all
-  |> result.map(fn(fields) {
-    list.sort(fields, by: fn(f1, f2) { int.compare(f1.id, f2.id) })
-  })
+  |> result.map(fn(fields) { list.sort(fields, by: increasing_id) })
 }
 
 pub fn extract_field(field: String) -> Result(Field, FieldError) {
@@ -44,4 +43,18 @@ pub fn extract_field(field: String) -> Result(Field, FieldError) {
     }
     _ -> Error(LengthError)
   }
+}
+
+pub fn as_type_strings(fields: List(Field)) -> List(String) {
+  fields
+  |> list.sort(increasing_id)
+  |> list.map(as_type_string)
+}
+
+pub fn as_type_string(field: Field) -> String {
+  "\t\t" <> field.name <> ": " <> field.gleam_type <> ","
+}
+
+fn increasing_id(f1: Field, f2: Field) -> Order {
+  int.compare(f1.id, f2.id)
 }

@@ -39,3 +39,24 @@ pub fn extract_ok_fields_test() {
     ]),
   )
 }
+
+pub fn as_type_string_test() {
+  Field(id: 1, name: "version_v1", gleam_type: "Int")
+  |> field.as_type_string
+  |> should.equal("\t\tversion_v1: Int,")
+}
+
+pub fn as_type_strings_test() {
+  [
+    Field(id: 1, name: "version_v1", gleam_type: "Int"),
+    Field(id: 2, name: "release", gleam_type: "String"),
+    Field(id: 3, name: "os", gleam_type: "String"),
+    Field(id: 4, name: "os_version", gleam_type: "String"),
+    Field(id: 5, name: "version_v2", gleam_type: "Int"),
+  ]
+  |> field.as_type_strings
+  |> should.equal([
+    "\t\tversion_v1: Int,", "\t\trelease: String,", "\t\tos: String,",
+    "\t\tos_version: String,", "\t\tversion_v2: Int,",
+  ])
+}

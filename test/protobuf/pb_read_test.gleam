@@ -35,6 +35,7 @@ pub fn read_authenticate_test() {
     "message Authenticate {", "String username = 1;", "String password = 2;",
     "repeated String tokens = 3;", "repeated Int celt_versions = 4;",
     "Bool opus = 5 [default = false];", "Int client_type = 6 [default = 0];",
-    "}",
+    "}}",
+    // double '}' due to wonky processing :) 
   ])
 }

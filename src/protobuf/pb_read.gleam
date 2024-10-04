@@ -7,7 +7,8 @@ pub fn read_messages(proto_path: String) -> List(String) {
   let assert Ok(#(_start, messages_only)) = string.split_once(proto, "message ")
 
   { "message " <> messages_only }
-  |> string.split("\n\n")
+  |> string.split("}\n\n")
+  |> list.map(fn(x) { x <> "}" })
   |> list.map(formatted)
   |> list.filter(fn(x) { !string.contains(x, "syntax = \"") })
   |> list.filter(fn(x) {

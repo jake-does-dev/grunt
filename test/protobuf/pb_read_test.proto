@@ -15,7 +15,7 @@ message Version {
 	// New version number format.
 	// Necessary since patch level may exceed 255. (See https://github.com/mumble-voip/mumble/issues/5827)
 	optional uint64 version_v2 = 5;
-  
+
 	// Client release name.
 	optional string release = 2;
 	// Client OS name.

@@ -1,13 +1,29 @@
+import gleam/io
 import gleam/list
+import gleam/regex
+import gleam/result
 import gleam/string
 import simplifile
+
+pub fn blah(proto_path: String) -> Nil {
+  let assert Ok(proto) = simplifile.read(from: proto_path)
+  let assert Ok(re) = regex.from_string("\\{(?:[^}{]*(?R)?)*+\\}")
+
+  let _ =
+    regex.scan(re, proto)
+    |> list.first
+    |> result.map(fn(x) { io.debug(x) })
+
+  todo
+}
 
 pub fn read_messages(proto_path: String) -> List(String) {
   let assert Ok(proto) = simplifile.read(from: proto_path)
   let assert Ok(#(_start, messages_only)) = string.split_once(proto, "message ")
 
   { "message " <> messages_only }
-  |> string.split("\n\n")
+  |> string.split("}\n\n")
+  |> list.map(fn(x) { x <> "}" })
   |> list.map(formatted)
   |> list.filter(fn(x) { !string.contains(x, "syntax = \"") })
   |> list.filter(fn(x) {

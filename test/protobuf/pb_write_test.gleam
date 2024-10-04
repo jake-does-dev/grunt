@@ -1,5 +1,5 @@
 import gleam/string
-import pb_write
+import protobuf/pb_write
 
 pub fn pb_write_version_test() {
   let message: String =

@@ -1,5 +1,5 @@
-import field.{Field, IdNotAnIntError, LengthError}
 import gleeunit/should
+import protobuf/field.{Field, IdNotAnIntError, LengthError}
 
 pub fn extract_ok_field_test() {
   let incoming_field = "Int version_v1 = 1;"

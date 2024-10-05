@@ -8,6 +8,7 @@ packages = [
   { name = "gleeunit", version = "1.2.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "F7A7228925D3EE7D0813C922E062BFD6D7E9310F0BEE585D3A42F3307E3CFD13" },
   { name = "gpb", version = "4.21.1", build_tools = ["rebar3", "make"], requirements = [], otp_app = "gpb", source = "hex", outer_checksum = "C05C9AEA9E25BD341367A43B3D3EB68E951563911072259C5EC4CB6642F4EF22" },
   { name = "mug", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "mug", source = "hex", outer_checksum = "C381913DB8389BBAABA856826CB858D1C7F63673E4932FC9499958395FA6B2E9" },
+  { name = "nibble", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "nibble", source = "hex", outer_checksum = "67C6BEBC1AB6D771AB893B4A7B3E66C92668C6E7774C335FEFCD545B06435FE5" },
   { name = "simplifile", version = "2.2.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0DFABEF7DC7A9E2FF4BB27B108034E60C81BEBFCB7AB816B9E7E18ED4503ACD8" },
 ]
 
@@ -17,4 +18,5 @@ gleam_stdlib = { version = ">= 0.34.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 gpb = { version = ">= 4.21.1" }
 mug = { version = ">= 1.1.1 and < 2.0.0" }
+nibble = { version = ">= 1.1.1 and < 2.0.0" }
 simplifile = { version = ">= 2.2.0 and < 3.0.0" }

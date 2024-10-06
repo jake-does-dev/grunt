@@ -13,7 +13,7 @@ pub fn create_packet_test() {
     )
 
   version
-  |> mumble.create_packet(mumble_pb.VersionName, _)
+  |> mumble.create_packet
   |> mumble.read_packet
   |> should.equal(Ok(version))
 }

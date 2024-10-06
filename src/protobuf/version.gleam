@@ -11,23 +11,13 @@ pub type Version {
   )
 }
 
-type VersionRecordListIntStrings =
+type VersionRecordErl =
   #(Atom, Int, Int, List(Int), List(Int), List(Int))
 
 type VersionRecord =
   #(Atom, Int, Int, String, String, String)
 
-pub fn encode(version: Version) -> BitArray {
-  as_record(version)
-  |> encode_msg
-}
-
-pub fn decode_version(bin: BitArray) -> Version {
-  decode_msg(bin, atom.create_from_string("Version"))
-  |> as_gleam
-}
-
-fn as_record(v: Version) -> VersionRecord {
+pub fn encode(v: Version) -> BitArray {
   #(
     atom.create_from_string("Version"),
     v.version_v1,
@@ -36,9 +26,12 @@ fn as_record(v: Version) -> VersionRecord {
     v.os,
     v.os_version,
   )
+  |> encode_msg
 }
 
-fn as_gleam(record: VersionRecordListIntStrings) -> Version {
+pub fn decode(bin: BitArray) -> Version {
+  let record = decode_msg(bin, atom.create_from_string("Version"))
+
   case record {
     #(_, version_v1, version_v2, release, os, os_version) -> {
       let assert Ok(release) = bit_array.to_string(list_to_binary(release))
@@ -52,10 +45,10 @@ fn as_gleam(record: VersionRecordListIntStrings) -> Version {
 }
 
 @external(erlang, "mumble", "encode_msg")
-fn encode_msg(version: VersionRecord) -> BitArray
+fn encode_msg(erl_record: VersionRecord) -> BitArray
 
 @external(erlang, "mumble", "decode_msg")
-fn decode_msg(bin: BitArray, message_name: Atom) -> VersionRecordListIntStrings
+fn decode_msg(bin: BitArray, message_name: Atom) -> VersionRecordErl
 
 @external(erlang, "erlang", "list_to_binary")
 fn list_to_binary(list: List(Int)) -> BitArray

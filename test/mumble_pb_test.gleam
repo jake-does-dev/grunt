@@ -1,5 +1,5 @@
 import gleeunit/should
-import protobuf/mumble_pb.{
+import mumble_pb.{
   Authenticate, AuthenticateName, Ping, PingName, Version, VersionName,
 }
 

@@ -1,5 +1,5 @@
-import client/mumble
 import gleam/io
+import mumble
 
 pub fn main() {
   io.println("Hello from grunt!")

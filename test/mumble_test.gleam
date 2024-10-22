@@ -1,6 +1,6 @@
-import client/mumble
+import client
 import gleeunit/should
-import protobuf/mumble_pb
+import mumble_pb
 
 pub fn create_packet_test() {
   let version =
@@ -13,7 +13,7 @@ pub fn create_packet_test() {
     )
 
   version
-  |> mumble.create_packet
-  |> mumble.read_packet
+  |> client.create_packet
+  |> client.read_packet
   |> should.equal(Ok(version))
 }

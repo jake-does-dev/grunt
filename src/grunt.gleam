@@ -1,7 +1,7 @@
-import client/mumble
+import client
 import gleam/io
 
 pub fn main() {
   io.println("Hello from grunt!")
-  mumble.connect()
+  client.connect()
 }

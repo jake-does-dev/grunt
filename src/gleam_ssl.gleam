@@ -1,49 +1,69 @@
 import erl_result.{type VoidResult}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/atom
-import gleam/result
-import mug.{type Error, type Socket}
+import mug.{type Error}
 
 @external(erlang, "ssl", "start")
-fn ssl_start() -> VoidResult(Error)
+fn ssl_start() -> VoidResult(SslError)
 
-fn start() -> Result(Nil, Error) {
+fn start() -> Result(Nil, SslError) {
   ssl_start()
   |> erl_result.to_result
 }
 
-pub type SslConnectOptionName {
-  Verify
+@external(erlang, "ssl", "connect")
+fn ssl_connect(
+  host: atom.Atom,
+  port: Int,
+  options: List(SslConnectOption),
+) -> Result(SslSocket, SslError)
+
+@external(erlang, "public_key", "cacerts_get")
+pub fn cacerts_get() -> Dynamic
+
+@external(erlang, "public_key", "pkix_verify_hostname_match_fun")
+fn pkix_verify_hostname_match_fun(https: atom.Atom) -> Dynamic
+
+type SslConnectOption {
+  Verify(verify_type: atom.Atom)
+  Cacerts(certs: Dynamic)
+  CustomizeHostnameCheck(options: List(CustomizeHostnameCheckOption))
 }
 
-pub type SslConnectOption =
-  #(SslConnectOptionName, Dynamic)
+type CustomizeHostnameCheckOption {
+  MatchFun(verify_hostname_match_fun: Dynamic)
+}
 
 pub type SslSocket
 
-@external(erlang, "ssl", "connect")
-fn ssl_connect(
-  socket: Socket,
-  options: List(SslConnectOption),
-) -> Result(SslSocket, Error)
+pub type SslError {
+  SslStartError
+  SslConnectError
+}
 
-pub fn connect_unverified(
+pub fn dangerous_connect(
   host host: String,
   port port: Int,
-  timeout timeout: Int,
-) -> Result(SslSocket, Error) {
+) -> Result(SslSocket, SslError) {
+  case start() {
+    Ok(Nil) ->
+      ssl_connect(atom.create(host), port, [Verify(atom.create("verify_none"))])
+    Error(_) -> Error(SslStartError)
+  }
+}
+
+pub fn connect(host host: String, port port: Int) -> Result(SslSocket, SslError) {
   case start() {
     Ok(Nil) -> {
-      mug.new(host, port)
-      |> mug.timeout(milliseconds: timeout)
-      |> mug.connect()
-      |> result.try(fn(socket) {
-        ssl_connect(socket, [
-          #(Verify, dynamic.from(atom.create_from_string("verify_none"))),
-        ])
-      })
+      ssl_connect(atom.create(host), port, [
+        Verify(atom.create("verify_peer")),
+        Cacerts(cacerts_get()),
+        CustomizeHostnameCheck([
+          MatchFun(pkix_verify_hostname_match_fun(atom.create("https"))),
+        ]),
+      ])
     }
-    Error(e) -> Error(e)
+    Error(_) -> Error(SslConnectError)
   }
 }
 

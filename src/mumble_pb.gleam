@@ -38,23 +38,15 @@ pub fn decode(name: MessageName, bin: BitArray) -> Message {
 // Encoders
 
 fn encode_authenticate(username: String, password: String) -> BitArray {
-  #(
-    atom.create_from_string("Authenticate"),
-    username,
-    password,
-    [],
-    [],
-    False,
-    0,
-  )
+  #(atom.create("Authenticate"), username, password, [], [], False, 0)
   |> encode_msg
 }
 
 fn encode_ping() -> BitArray {
-  let assert Ok(undefined) = atom.from_string("undefined")
+  let undefined = atom.create("undefined")
 
   #(
-    atom.create_from_string("Ping"),
+    atom.create("Ping"),
     undefined,
     undefined,
     undefined,
@@ -77,14 +69,7 @@ fn encode_version(
   os: String,
   os_version: String,
 ) -> BitArray {
-  #(
-    atom.create_from_string("Version"),
-    version_v1,
-    version_v2,
-    release,
-    os,
-    os_version,
-  )
+  #(atom.create("Version"), version_v1, version_v2, release, os, os_version)
   |> encode_msg
 }
 
@@ -94,8 +79,7 @@ fn encode_msg(m: message) -> BitArray
 // Decoders
 
 fn decode_authenticate(bin: BitArray) -> Message {
-  let record =
-    decode_authenticate_record(bin, atom.create_from_string("Authenticate"))
+  let record = decode_authenticate_record(bin, atom.create("Authenticate"))
   case record {
     #(_, username, password, _, _, _, _) -> {
       let assert Ok(username) = bit_array.to_string(list_to_binary(username))
@@ -118,7 +102,7 @@ type AuthenticateRecordErl =
 // 
 
 fn decode_ping(bin: BitArray) -> Message {
-  let record = decode_ping_record(bin, atom.create_from_string("Ping"))
+  let record = decode_ping_record(bin, atom.create("Ping"))
   case record {
     _ -> Ping
   }
@@ -133,7 +117,7 @@ type PingRecordErl =
 //
 
 fn decode_version(bin: BitArray) -> Message {
-  let record = decode_version_record(bin, atom.create_from_string("Version"))
+  let record = decode_version_record(bin, atom.create("Version"))
 
   case record {
     #(_, version_v1, version_v2, release, os, os_version) -> {

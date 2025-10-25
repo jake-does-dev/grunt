@@ -1,4 +1,5 @@
 import gleam/bit_array
+import gleam/erlang/process
 import gleam/io
 import gleam/result
 import gleam_ssl
@@ -6,9 +7,9 @@ import mumble_pb
 
 pub fn connect() {
   let assert Ok(socket) =
-    gleam_ssl.connect_unverified(host: "0.0.0.0", port: 64_738, timeout: 500)
+    gleam_ssl.dangerous_connect(host: "0.0.0.0", port: 64_738)
 
-  io.debug("ssl connected")
+  echo "ssl connected"
 
   let assert Ok(_) =
     gleam_ssl.send(
@@ -34,6 +35,8 @@ pub fn connect() {
     )
 
   io.println("Mumble auth sent")
+
+  process.sleep(10_000)
   // // Receive a packet back
   // let assert Ok(packet) = mug.receive(socket, timeout_milliseconds: 6000)
   // packet

@@ -40,10 +40,7 @@ pub fn connect(
   let assert Ok(_) =
     send(
       socket,
-      proto.Authenticate(
-        username: "jake-does-testing Bot",
-        password: "",
-      ),
+      proto.Authenticate(username: "jake-does-testing Bot", password: ""),
     )
 
   socket

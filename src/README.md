@@ -1,6 +1,6 @@
 ## Overview
 
-### `mumble_pb.gleam`
+### `proto.gleam`
 
 This module is meant to function as an interop between Gleam, and the Erlang generated
 protobuf files for Mumble.

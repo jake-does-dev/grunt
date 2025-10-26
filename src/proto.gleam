@@ -17,6 +17,7 @@ pub type Message {
     tree_id: List(Int),
     message: String,
   )
+  ChannelState(channel_id: Int, parent: Int, name: String)
 }
 
 pub type MessageName {
@@ -24,6 +25,7 @@ pub type MessageName {
   AuthenticateName
   PingName
   TextMessageName
+  ChannelStateName
 }
 
 pub fn encode(m: Message) -> BitArray {
@@ -33,6 +35,8 @@ pub fn encode(m: Message) -> BitArray {
     Version(v1, v2, rel, os, os_ver) -> encode_version(v1, v2, rel, os, os_ver)
     TextMessage(session, channel_id, tree_id, message) ->
       encode_text_message(session, channel_id, tree_id, message)
+    ChannelState(channel_id, parent, name) ->
+      encode_channel_state(channel_id, parent, name)
   }
 }
 
@@ -42,6 +46,7 @@ pub fn decode(name: MessageName, bin: BitArray) -> Message {
     PingName -> decode_ping(bin)
     VersionName -> decode_version(bin)
     TextMessageName -> decode_text_message(bin)
+    ChannelStateName -> decode_channel_state(bin)
   }
 }
 
@@ -102,6 +107,28 @@ fn encode_text_message(
   |> encode_msg
 }
 
+fn encode_channel_state(channel_id: Int, parent: Int, name: String) -> BitArray {
+  let undefined = atom.create("undefined")
+
+  #(
+    atom.create("ChannelState"),
+    channel_id,
+    parent,
+    name,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+  )
+  |> encode_msg
+}
+
 @external(erlang, "mumble", "encode_msg")
 fn encode_msg(m: message) -> BitArray
 
@@ -119,6 +146,24 @@ type PingRecordErl =
 type TextMessageRecordErl =
   #(Atom, Int, List(Int), List(Int), List(Int), List(Int))
 
+type ChannelStateRecordErl =
+  #(
+    Atom,
+    Int,
+    Int,
+    String,
+    List(Int),
+    List(Int),
+    List(Int),
+    List(Int),
+    Bool,
+    Int,
+    List(Int),
+    Int,
+    Bool,
+    Bool,
+  )
+
 @external(erlang, "mumble", "decode_msg")
 fn decode_authenticate_record(
   bin: BitArray,
@@ -126,8 +171,7 @@ fn decode_authenticate_record(
 ) -> AuthenticateRecordErl
 
 fn decode_authenticate(bin: BitArray) -> Message {
-  let record = decode_authenticate_record(bin, atom.create("Authenticate"))
-  case record {
+  case decode_authenticate_record(bin, atom.create("Authenticate")) {
     #(_, username, password, _, _, _, _) -> {
       let assert Ok(username) = bit_array.to_string(list_to_binary(username))
       let assert Ok(password) = bit_array.to_string(list_to_binary(password))
@@ -141,8 +185,7 @@ fn decode_authenticate(bin: BitArray) -> Message {
 fn decode_ping_record(bin: BitArray, message_name: Atom) -> PingRecordErl
 
 fn decode_ping(bin: BitArray) -> Message {
-  let record = decode_ping_record(bin, atom.create("Ping"))
-  case record {
+  case decode_ping_record(bin, atom.create("Ping")) {
     _ -> Ping
   }
 }
@@ -151,9 +194,7 @@ fn decode_ping(bin: BitArray) -> Message {
 fn decode_version_record(bin: BitArray, message_name: Atom) -> VersionRecordErl
 
 fn decode_version(bin: BitArray) -> Message {
-  let record = decode_version_record(bin, atom.create("Version"))
-
-  case record {
+  case decode_version_record(bin, atom.create("Version")) {
     #(_, version_v1, version_v2, release, os, os_version) -> {
       let assert Ok(release) = bit_array.to_string(list_to_binary(release))
       let assert Ok(os) = bit_array.to_string(list_to_binary(os))
@@ -172,12 +213,24 @@ fn decode_text_message_record(
 ) -> TextMessageRecordErl
 
 fn decode_text_message(bin: BitArray) -> Message {
-  let record = decode_text_message_record(bin, atom.create("TextMessage"))
-
-  case record {
+  case decode_text_message_record(bin, atom.create("TextMessage")) {
     #(_, _, session, channel_id, tree_id, message) -> {
       let assert Ok(message) = bit_array.to_string(list_to_binary(message))
       TextMessage(session:, channel_id:, tree_id:, message:)
+    }
+  }
+}
+
+@external(erlang, "mumble", "decode_msg")
+fn decode_channel_state_record(
+  bin: BitArray,
+  message_name: Atom,
+) -> ChannelStateRecordErl
+
+fn decode_channel_state(bin: BitArray) -> Message {
+  case decode_channel_state_record(bin, atom.create("ChannelState")) {
+    #(_, channel_id, parent, name, _, _, _, _, _, _, _, _, _, _) -> {
+      ChannelState(channel_id:, parent:, name:)
     }
   }
 }

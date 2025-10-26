@@ -13,6 +13,6 @@ pub fn create_packet_test() {
     )
 
   let packet = grunt.create_packet(version)
-  let read = grunt.read_packet(packet)
+  let read = grunt.read_packet(0, packet)
   should.equal(read, Ok(version))
 }

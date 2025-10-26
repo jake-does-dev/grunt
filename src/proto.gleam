@@ -11,12 +11,19 @@ pub type Message {
   )
   Authenticate(username: String, password: String)
   Ping
+  TextMessage(
+    session: List(Int),
+    channel_id: List(Int),
+    tree_id: List(Int),
+    message: String,
+  )
 }
 
 pub type MessageName {
   VersionName
   AuthenticateName
   PingName
+  TextMessageName
 }
 
 pub fn encode(m: Message) -> BitArray {
@@ -24,6 +31,8 @@ pub fn encode(m: Message) -> BitArray {
     Authenticate(user, pass) -> encode_authenticate(user, pass)
     Ping -> encode_ping()
     Version(v1, v2, rel, os, os_ver) -> encode_version(v1, v2, rel, os, os_ver)
+    TextMessage(session, channel_id, tree_id, message) ->
+      encode_text_message(session, channel_id, tree_id, message)
   }
 }
 
@@ -32,6 +41,7 @@ pub fn decode(name: MessageName, bin: BitArray) -> Message {
     AuthenticateName -> decode_authenticate(bin)
     PingName -> decode_ping(bin)
     VersionName -> decode_version(bin)
+    TextMessageName -> decode_text_message(bin)
   }
 }
 
@@ -73,10 +83,47 @@ fn encode_version(
   |> encode_msg
 }
 
+fn encode_text_message(
+  session: List(Int),
+  channel_id: List(Int),
+  tree_id: List(Int),
+  message: String,
+) -> BitArray {
+  let undefined = atom.create("undefined")
+
+  #(
+    atom.create("TextMessage"),
+    undefined,
+    session,
+    channel_id,
+    tree_id,
+    message,
+  )
+  |> encode_msg
+}
+
 @external(erlang, "mumble", "encode_msg")
 fn encode_msg(m: message) -> BitArray
 
 // Decoders
+
+type AuthenticateRecordErl =
+  #(Atom, List(Int), List(Int), List(List(Int)), List(Int), Bool, Int)
+
+type VersionRecordErl =
+  #(Atom, Int, Int, List(Int), List(Int), List(Int))
+
+type PingRecordErl =
+  #(Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom)
+
+type TextMessageRecordErl =
+  #(Atom, Int, List(Int), List(Int), List(Int), List(Int))
+
+@external(erlang, "mumble", "decode_msg")
+fn decode_authenticate_record(
+  bin: BitArray,
+  message_name: Atom,
+) -> AuthenticateRecordErl
 
 fn decode_authenticate(bin: BitArray) -> Message {
   let record = decode_authenticate_record(bin, atom.create("Authenticate"))
@@ -91,15 +138,7 @@ fn decode_authenticate(bin: BitArray) -> Message {
 }
 
 @external(erlang, "mumble", "decode_msg")
-fn decode_authenticate_record(
-  bin: BitArray,
-  message_name: Atom,
-) -> AuthenticateRecordErl
-
-type AuthenticateRecordErl =
-  #(Atom, List(Int), List(Int), List(List(Int)), List(Int), Bool, Int)
-
-// 
+fn decode_ping_record(bin: BitArray, message_name: Atom) -> PingRecordErl
 
 fn decode_ping(bin: BitArray) -> Message {
   let record = decode_ping_record(bin, atom.create("Ping"))
@@ -109,12 +148,7 @@ fn decode_ping(bin: BitArray) -> Message {
 }
 
 @external(erlang, "mumble", "decode_msg")
-fn decode_ping_record(bin: BitArray, message_name: Atom) -> PingRecordErl
-
-type PingRecordErl =
-  #(Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom, Atom)
-
-//
+fn decode_version_record(bin: BitArray, message_name: Atom) -> VersionRecordErl
 
 fn decode_version(bin: BitArray) -> Message {
   let record = decode_version_record(bin, atom.create("Version"))
@@ -132,10 +166,21 @@ fn decode_version(bin: BitArray) -> Message {
 }
 
 @external(erlang, "mumble", "decode_msg")
-fn decode_version_record(bin: BitArray, message_name: Atom) -> VersionRecordErl
+fn decode_text_message_record(
+  bin: BitArray,
+  message_name: Atom,
+) -> TextMessageRecordErl
 
-type VersionRecordErl =
-  #(Atom, Int, Int, List(Int), List(Int), List(Int))
+fn decode_text_message(bin: BitArray) -> Message {
+  let record = decode_text_message_record(bin, atom.create("TextMessage"))
+
+  case record {
+    #(_, _, session, channel_id, tree_id, message) -> {
+      let assert Ok(message) = bit_array.to_string(list_to_binary(message))
+      TextMessage(session:, channel_id:, tree_id:, message:)
+    }
+  }
+}
 
 // Helpers
 

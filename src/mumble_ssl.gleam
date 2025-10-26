@@ -1,7 +1,6 @@
 import erl_result.{type VoidResult}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/atom
-import mug
 
 @external(erlang, "ssl", "start")
 fn ssl_start() -> VoidResult(SslError)
@@ -42,7 +41,6 @@ pub type SslError {
   SslConnectError
   SslReadError
   SslMessageTypeError(String)
-  MugError(mug.Error)
 }
 
 pub fn dangerous_connect(

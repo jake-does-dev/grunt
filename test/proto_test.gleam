@@ -1,12 +1,12 @@
 import gleeunit/should
-import mumble_pb.{
+import proto.{
   Authenticate, AuthenticateName, Ping, PingName, Version, VersionName,
 }
 
 pub fn encode_ping_test() {
   Ping
-  |> mumble_pb.encode
-  |> mumble_pb.decode(PingName, _)
+  |> proto.encode
+  |> proto.decode(PingName, _)
   |> should.equal(Ping)
 }
 
@@ -21,8 +21,8 @@ pub fn encode_version_test() {
     )
 
   version
-  |> mumble_pb.encode
-  |> mumble_pb.decode(VersionName, _)
+  |> proto.encode
+  |> proto.decode(VersionName, _)
   |> should.equal(version)
 }
 
@@ -30,7 +30,7 @@ pub fn authenticate_test() {
   let authenticate = Authenticate(username: "username", password: "password")
 
   authenticate
-  |> mumble_pb.encode
-  |> mumble_pb.decode(AuthenticateName, _)
+  |> proto.encode
+  |> proto.decode(AuthenticateName, _)
   |> should.equal(authenticate)
 }

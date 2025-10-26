@@ -1,7 +1,7 @@
 import erl_result.{type VoidResult}
 import gleam/dynamic.{type Dynamic}
 import gleam/erlang/atom
-import mug.{type Error}
+import mug
 
 @external(erlang, "ssl", "start")
 fn ssl_start() -> VoidResult(SslError)
@@ -28,6 +28,7 @@ type SslConnectOption {
   Verify(verify_type: atom.Atom)
   Cacerts(certs: Dynamic)
   CustomizeHostnameCheck(options: List(CustomizeHostnameCheckOption))
+  Active(mode: atom.Atom)
 }
 
 type CustomizeHostnameCheckOption {
@@ -39,6 +40,9 @@ pub type SslSocket
 pub type SslError {
   SslStartError
   SslConnectError
+  SslReadError
+  SslMessageTypeError(String)
+  MugError(mug.Error)
 }
 
 pub fn dangerous_connect(
@@ -47,7 +51,10 @@ pub fn dangerous_connect(
 ) -> Result(SslSocket, SslError) {
   case start() {
     Ok(Nil) ->
-      ssl_connect(atom.create(host), port, [Verify(atom.create("verify_none"))])
+      ssl_connect(atom.create(host), port, [
+        Verify(atom.create("verify_none")),
+        Active(atom.create("false")),
+      ])
     Error(_) -> Error(SslStartError)
   }
 }
@@ -58,6 +65,7 @@ pub fn connect(host host: String, port port: Int) -> Result(SslSocket, SslError)
       ssl_connect(atom.create(host), port, [
         Verify(atom.create("verify_peer")),
         Cacerts(cacerts_get()),
+        Active(atom.create("false")),
         CustomizeHostnameCheck([
           MatchFun(pkix_verify_hostname_match_fun(atom.create("https"))),
         ]),
@@ -68,9 +76,22 @@ pub fn connect(host host: String, port port: Int) -> Result(SslSocket, SslError)
 }
 
 @external(erlang, "ssl", "send")
-fn ssl_send(socket: SslSocket, packet: BitArray) -> VoidResult(Error)
+fn ssl_send(socket: SslSocket, packet: BitArray) -> VoidResult(SslError)
 
-pub fn send(socket: SslSocket, packet: BitArray) -> Result(Nil, Error) {
+pub fn send(socket: SslSocket, packet: BitArray) -> Result(Nil, SslError) {
   ssl_send(socket, packet)
   |> erl_result.to_result
+}
+
+@external(erlang, "ssl", "recv")
+fn ssl_recv(socket: SslSocket, length: Int) -> Result(List(Int), SslError)
+
+@external(erlang, "erlang", "list_to_binary")
+fn list_to_binary(list: List(Int)) -> BitArray
+
+pub fn receive(socket: SslSocket, length: Int) -> Result(BitArray, SslError) {
+  case ssl_recv(socket, length) {
+    Ok(data) -> Ok(list_to_binary(data))
+    Error(_) -> Error(SslReadError)
+  }
 }

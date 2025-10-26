@@ -1,13 +1,13 @@
 import gleam/bit_array
-import gleam/erlang/process
+import gleam/int
 import gleam/result
 import mumble_ssl.{type SslError, type SslSocket, SslMessageTypeError}
 import proto
 
 pub fn main() {
-  let socket = connect("0.0.0.0", 64_738, True)
-  process.sleep(1000)
-  echo receive(socket)
+  connect("0.0.0.0", 64_738, True)
+  //TODO: calling `receive(socket)` will wait until there is a new message
+  // need to integrate this with OTP, most likely
 }
 
 pub fn connect(
@@ -54,6 +54,7 @@ pub fn create_packet(message: proto.Message) -> BitArray {
     proto.Version(..) -> 0
     proto.Authenticate(..) -> 2
     proto.Ping -> 3
+    proto.TextMessage(..) -> 11
   }
   let type_number_array = <<type_number:16>>
 
@@ -82,7 +83,13 @@ pub fn read_packet(packet: BitArray) -> Result(proto.Message, SslError) {
     0 -> Ok(proto.VersionName)
     2 -> Ok(proto.AuthenticateName)
     3 -> Ok(proto.PingName)
-    _ -> Error(SslMessageTypeError("Unable to identify message type"))
+    11 -> Ok(proto.TextMessageName)
+    _ ->
+      Error(SslMessageTypeError(
+        "Proto not implemented for message type "
+        <> int.to_string(type_number)
+        <> ". Continuing...",
+      ))
   }
   |> result.map(fn(name) { proto.decode(name, protobuf_encoded) })
 }

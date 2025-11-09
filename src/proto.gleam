@@ -1,5 +1,6 @@
 import gleam/bit_array
 import gleam/erlang/atom.{type Atom}
+import gleam/erlang/charlist
 import simplifile
 
 pub type Message {
@@ -131,12 +132,12 @@ fn encode_channel_state(channel_id: Int, parent: Int, name: String) -> BitArray 
     channel_id,
     parent,
     name,
+    [],
     undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
+    [],
+    [],
+    False,
+    0,
     undefined,
     undefined,
     undefined,
@@ -192,7 +193,7 @@ type ChannelStateRecordErl =
     Atom,
     Int,
     Int,
-    String,
+    charlist.Charlist,
     List(Int),
     String,
     List(Int),
@@ -209,7 +210,7 @@ type CryptSetupRecordErl =
   #(Atom, String, String, String)
 
 type ServerSyncRecordErl =
-  #(Atom, Int, Int, String, Int)
+  #(Atom, Int, Int, charlist.Charlist, Int)
 
 @external(erlang, "mumble", "decode_msg")
 fn decode_authenticate_record(
@@ -277,7 +278,7 @@ fn decode_channel_state_record(
 fn decode_channel_state(bin: BitArray) -> Message {
   case decode_channel_state_record(bin, atom.create("ChannelState")) {
     #(_, channel_id, parent, name, _, _, _, _, _, _, _, _, _, _) -> {
-      ChannelState(channel_id:, parent:, name:)
+      ChannelState(channel_id, parent, charlist.to_string(name))
     }
   }
 }
@@ -305,7 +306,12 @@ fn decode_server_sync_record(
 fn decode_server_sync(bin: BitArray) -> Message {
   case decode_server_sync_record(bin, atom.create("ServerSync")) {
     #(_, session, max_bandwidth, welcome_text, permissions) -> {
-      ServerSync(session:, max_bandwidth:, welcome_text:, permissions:)
+      ServerSync(
+        session,
+        max_bandwidth,
+        charlist.to_string(welcome_text),
+        permissions,
+      )
     }
   }
 }

@@ -13,6 +13,15 @@ pub fn main() {
   let socket = connect("0.0.0.0", 64_738, Dangerous)
   //TODO: calling `receive(socket)` will wait until there is a new message
   // need to integrate this with OTP, most likely
+  echo receive(socket)
+  echo receive(socket)
+  echo receive(socket)
+  echo receive(socket)
+  echo receive(socket)
+  echo receive(socket)
+  echo receive(socket)
+  echo receive(socket)
+  echo receive(socket)
 }
 
 pub fn connect(
@@ -59,8 +68,9 @@ pub fn create_packet(message: proto.Message) -> BitArray {
     proto.Version(..) -> 0
     proto.Authenticate(..) -> 2
     proto.Ping -> 3
+    proto.ChannelState(..) -> 7
     proto.TextMessage(..) -> 11
-    proto.ChannelState(..) -> 15
+    proto.CryptSetup(..) -> 15
   }
   let type_number_array = <<type_number:16>>
 
@@ -97,6 +107,7 @@ pub fn read_packet(
     3 -> Ok(proto.PingName)
     7 -> Ok(proto.ChannelStateName)
     11 -> Ok(proto.TextMessageName)
+    15 -> Ok(proto.CryptSetupName)
     _ -> {
       Error(SslMessageTypeError(
         "Proto not implemented for message type "

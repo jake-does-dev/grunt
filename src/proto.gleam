@@ -18,6 +18,7 @@ pub type Message {
     message: String,
   )
   ChannelState(channel_id: Int, parent: Int, name: String)
+  CryptSetup(key: String, client_nonce: String, server_nonce: String)
 }
 
 pub type MessageName {
@@ -26,6 +27,7 @@ pub type MessageName {
   PingName
   TextMessageName
   ChannelStateName
+  CryptSetupName
 }
 
 pub fn encode(m: Message) -> BitArray {
@@ -37,6 +39,8 @@ pub fn encode(m: Message) -> BitArray {
       encode_text_message(session, channel_id, tree_id, message)
     ChannelState(channel_id, parent, name) ->
       encode_channel_state(channel_id, parent, name)
+    CryptSetup(key, client_nonce, server_nonce) ->
+      encode_crypt_setup(key, client_nonce, server_nonce)
   }
 }
 
@@ -47,6 +51,7 @@ pub fn decode(name: MessageName, bin: BitArray) -> Message {
     VersionName -> decode_version(bin)
     TextMessageName -> decode_text_message(bin)
     ChannelStateName -> decode_channel_state(bin)
+    CryptSetupName -> decode_crypt_setup(bin)
   }
 }
 
@@ -129,6 +134,15 @@ fn encode_channel_state(channel_id: Int, parent: Int, name: String) -> BitArray 
   |> encode_msg
 }
 
+fn encode_crypt_setup(
+  key: String,
+  client_nonce: String,
+  server_nonce: String,
+) -> BitArray {
+  #(atom.create("CryptSetup"), key, client_nonce, server_nonce)
+  |> encode_msg
+}
+
 @external(erlang, "mumble", "encode_msg")
 fn encode_msg(m: message) -> BitArray
 
@@ -153,7 +167,7 @@ type ChannelStateRecordErl =
     Int,
     String,
     List(Int),
-    List(Int),
+    String,
     List(Int),
     List(Int),
     Bool,
@@ -163,6 +177,9 @@ type ChannelStateRecordErl =
     Bool,
     Bool,
   )
+
+type CryptSetupRecordErl =
+  #(Atom, String, String, String)
 
 @external(erlang, "mumble", "decode_msg")
 fn decode_authenticate_record(
@@ -231,6 +248,20 @@ fn decode_channel_state(bin: BitArray) -> Message {
   case decode_channel_state_record(bin, atom.create("ChannelState")) {
     #(_, channel_id, parent, name, _, _, _, _, _, _, _, _, _, _) -> {
       ChannelState(channel_id:, parent:, name:)
+    }
+  }
+}
+
+@external(erlang, "mumble", "decode_msg")
+fn decode_crypt_setup_record(
+  bin: BitArray,
+  message_name: Atom,
+) -> CryptSetupRecordErl
+
+fn decode_crypt_setup(bin: BitArray) -> Message {
+  case decode_crypt_setup_record(bin, atom.create("CryptSetup")) {
+    #(_, key, client_nonce, server_nonce) -> {
+      CryptSetup(key:, client_nonce:, server_nonce:)
     }
   }
 }

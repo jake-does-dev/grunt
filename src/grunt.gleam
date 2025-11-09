@@ -4,8 +4,13 @@ import gleam/result
 import mumble_ssl.{type SslError, type SslSocket, SslMessageTypeError}
 import proto
 
+pub type ConnectionType {
+  Safe
+  Dangerous
+}
+
 pub fn main() {
-  connect("0.0.0.0", 64_738, True)
+  let socket = connect("0.0.0.0", 64_738, Dangerous)
   //TODO: calling `receive(socket)` will wait until there is a new message
   // need to integrate this with OTP, most likely
 }
@@ -13,11 +18,11 @@ pub fn main() {
 pub fn connect(
   host: String,
   port: Int,
-  ignore_cert_validation: Bool,
+  ignore_cert_validation: ConnectionType,
 ) -> SslSocket {
   let assert Ok(socket) = case ignore_cert_validation {
-    True -> mumble_ssl.dangerous_connect(host:, port:)
-    False -> mumble_ssl.connect(host, port)
+    Dangerous -> mumble_ssl.dangerous_connect(host:, port:)
+    Safe -> mumble_ssl.connect(host, port)
   }
 
   let assert Ok(_) =
@@ -35,7 +40,7 @@ pub fn connect(
   let assert Ok(_) =
     send(
       socket,
-      proto.Authenticate(username: "jake-does-testing", password: ""),
+      proto.Authenticate(username: "jake-does-testing Bot", password: ""),
     )
 
   socket
@@ -55,6 +60,7 @@ pub fn create_packet(message: proto.Message) -> BitArray {
     proto.Authenticate(..) -> 2
     proto.Ping -> 3
     proto.TextMessage(..) -> 11
+    proto.ChannelState(..) -> 15
   }
   let type_number_array = <<type_number:16>>
 
@@ -71,25 +77,33 @@ pub type PacketInformation {
 }
 
 pub fn receive(socket: SslSocket) -> Result(proto.Message, SslError) {
-  mumble_ssl.receive(socket, 0)
-  |> result.try(fn(packet) { read_packet(packet) })
+  let assert Ok(<<type_number:big-unsigned-size(16)>>) =
+    mumble_ssl.receive(socket, 2)
+  let assert Ok(<<payload_size:big-unsigned-size(32)>>) =
+    mumble_ssl.receive(socket, 4)
+  let assert Ok(<<protobuf_encoded:bits>>) =
+    mumble_ssl.receive(socket, payload_size)
+
+  read_packet(type_number, protobuf_encoded)
 }
 
-pub fn read_packet(packet: BitArray) -> Result(proto.Message, SslError) {
-  let assert <<type_number:16, rest:bits>> = packet
-  let assert <<_payload_size:32, protobuf_encoded:bits>> = rest
-
+pub fn read_packet(
+  type_number: Int,
+  protobuf_encoded: BitArray,
+) -> Result(proto.Message, SslError) {
   case type_number {
     0 -> Ok(proto.VersionName)
     2 -> Ok(proto.AuthenticateName)
     3 -> Ok(proto.PingName)
+    7 -> Ok(proto.ChannelStateName)
     11 -> Ok(proto.TextMessageName)
-    _ ->
+    _ -> {
       Error(SslMessageTypeError(
         "Proto not implemented for message type "
         <> int.to_string(type_number)
         <> ". Continuing...",
       ))
+    }
   }
   |> result.map(fn(name) { proto.decode(name, protobuf_encoded) })
 }

@@ -1,5 +1,6 @@
 import gleam/bit_array
 import gleam/erlang/atom.{type Atom}
+import simplifile
 
 pub type Message {
   Version(
@@ -19,6 +20,12 @@ pub type Message {
   )
   ChannelState(channel_id: Int, parent: Int, name: String)
   CryptSetup(key: String, client_nonce: String, server_nonce: String)
+  ServerSync(
+    session: Int,
+    max_bandwidth: Int,
+    welcome_text: String,
+    permissions: Int,
+  )
 }
 
 pub type MessageName {
@@ -28,6 +35,7 @@ pub type MessageName {
   TextMessageName
   ChannelStateName
   CryptSetupName
+  ServerSyncName
 }
 
 pub fn encode(m: Message) -> BitArray {
@@ -41,6 +49,8 @@ pub fn encode(m: Message) -> BitArray {
       encode_channel_state(channel_id, parent, name)
     CryptSetup(key, client_nonce, server_nonce) ->
       encode_crypt_setup(key, client_nonce, server_nonce)
+    ServerSync(session:, max_bandwidth:, welcome_text:, permissions:) ->
+      encode_server_sync(session, max_bandwidth, welcome_text, permissions)
   }
 }
 
@@ -52,6 +62,7 @@ pub fn decode(name: MessageName, bin: BitArray) -> Message {
     TextMessageName -> decode_text_message(bin)
     ChannelStateName -> decode_channel_state(bin)
     CryptSetupName -> decode_crypt_setup(bin)
+    ServerSyncName -> decode_server_sync(bin)
   }
 }
 
@@ -143,6 +154,22 @@ fn encode_crypt_setup(
   |> encode_msg
 }
 
+fn encode_server_sync(
+  session: Int,
+  max_bandwidth: Int,
+  welcome_text: String,
+  permissions: Int,
+) -> BitArray {
+  #(
+    atom.create("ServerSync"),
+    session,
+    max_bandwidth,
+    welcome_text,
+    permissions,
+  )
+  |> encode_msg
+}
+
 @external(erlang, "mumble", "encode_msg")
 fn encode_msg(m: message) -> BitArray
 
@@ -180,6 +207,9 @@ type ChannelStateRecordErl =
 
 type CryptSetupRecordErl =
   #(Atom, String, String, String)
+
+type ServerSyncRecordErl =
+  #(Atom, Int, Int, String, Int)
 
 @external(erlang, "mumble", "decode_msg")
 fn decode_authenticate_record(
@@ -262,6 +292,20 @@ fn decode_crypt_setup(bin: BitArray) -> Message {
   case decode_crypt_setup_record(bin, atom.create("CryptSetup")) {
     #(_, key, client_nonce, server_nonce) -> {
       CryptSetup(key:, client_nonce:, server_nonce:)
+    }
+  }
+}
+
+@external(erlang, "mumble", "decode_msg")
+fn decode_server_sync_record(
+  bin: BitArray,
+  message_name: Atom,
+) -> ServerSyncRecordErl
+
+fn decode_server_sync(bin: BitArray) -> Message {
+  case decode_server_sync_record(bin, atom.create("ServerSync")) {
+    #(_, session, max_bandwidth, welcome_text, permissions) -> {
+      ServerSync(session:, max_bandwidth:, welcome_text:, permissions:)
     }
   }
 }

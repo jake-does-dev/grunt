@@ -68,6 +68,7 @@ pub fn create_packet(message: proto.Message) -> BitArray {
     proto.Version(..) -> 0
     proto.Authenticate(..) -> 2
     proto.Ping -> 3
+    proto.ServerSync(..) -> 5
     proto.ChannelState(..) -> 7
     proto.TextMessage(..) -> 11
     proto.CryptSetup(..) -> 15
@@ -105,6 +106,7 @@ pub fn read_packet(
     0 -> Ok(proto.VersionName)
     2 -> Ok(proto.AuthenticateName)
     3 -> Ok(proto.PingName)
+    5 -> Ok(proto.ServerSyncName)
     7 -> Ok(proto.ChannelStateName)
     11 -> Ok(proto.TextMessageName)
     15 -> Ok(proto.CryptSetupName)
